@@ -1,0 +1,435 @@
+--Auto skill With Auto Parry X
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local player = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+
+_G.ReturnToPosition = false
+local SavedPosition = nil
+
+_G.BrokenBladeSkills = {
+	Z = false,
+	X = false,
+	C = false,
+	V = false,
+	W = false,
+	AutoParryX = false
+}
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrokenBladeUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 560)
+frame.Position = UDim2.new(0.5, -125, 0.5, -130)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,12)
+corner.Parent = frame
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(170,120,255)
+stroke.Thickness = 2
+stroke.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-65,0,40)
+title.BackgroundTransparency = 1
+title.Text = "👑 AUTO SKILLS"
+title.TextColor3 = Color3.fromRGB(220,220,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = frame
+
+-- Drag PC + Mobile
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+
+	frame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+title.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement
+	or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input == dragInput then
+		updateDrag(input)
+	end
+end)
+
+-- Buttons Z X C V F (5 ปุ่ม)
+local skills = {"Z","X","C","V","W"}
+
+for i, key in ipairs(skills) do
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.85,0,0,40)
+	btn.Position = UDim2.new(0.075,0,0,50 + ((i-1)*50))
+	btn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 16
+	btn.Parent = frame
+
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0,8)
+	c.Parent = btn
+
+	local function update()
+		if _G.BrokenBladeSkills[key] then
+			btn.BackgroundColor3 = Color3.fromRGB(100,0,180)
+			btn.Text = key.."  [ ON ]"
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+			btn.Text = key.."  [ OFF ]"
+		end
+	end
+	update()
+
+	btn.MouseButton1Click:Connect(function()
+		_G.BrokenBladeSkills[key] = not _G.BrokenBladeSkills[key]
+		update()
+	end)
+end
+
+-- AutoParryX Button (ใต้ F = index 6 = y 300)
+local autoParryBtn = Instance.new("TextButton")
+autoParryBtn.Size = UDim2.new(0.85,0,0,40)
+autoParryBtn.Position = UDim2.new(0.075,0,0,300)
+autoParryBtn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+autoParryBtn.TextColor3 = Color3.fromRGB(255,255,255)
+autoParryBtn.Font = Enum.Font.GothamBold
+autoParryBtn.TextSize = 14
+autoParryBtn.Parent = frame
+
+local apc = Instance.new("UICorner")
+apc.CornerRadius = UDim.new(0,8)
+apc.Parent = autoParryBtn
+
+local function updateAutoParry()
+	if _G.BrokenBladeSkills.AutoParryX then
+		autoParryBtn.BackgroundColor3 = Color3.fromRGB(180,80,0)
+		autoParryBtn.Text = "AUTO PARRY X  [ ON ]"
+	else
+		autoParryBtn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+		autoParryBtn.Text = "AUTO PARRY X  [ OFF ]"
+	end
+end
+updateAutoParry()
+
+autoParryBtn.MouseButton1Click:Connect(function()
+	_G.BrokenBladeSkills.AutoParryX = not _G.BrokenBladeSkills.AutoParryX
+	updateAutoParry()
+end)
+
+-- Close Button
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0,25,0,25)
+close.Position = UDim2.new(1,-30,0,8)
+close.Text = "X"
+close.Font = Enum.Font.GothamBold
+close.TextSize = 14
+close.TextColor3 = Color3.new(1,1,1)
+close.BackgroundColor3 = Color3.fromRGB(180,40,40)
+close.Parent = frame
+
+local cc = Instance.new("UICorner")
+cc.CornerRadius = UDim.new(1,0)
+cc.Parent = close
+
+close.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+-- Minimize Button
+local minimized = false
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0,25,0,25)
+minimizeBtn.Position = UDim2.new(1,-60,0,8)
+minimizeBtn.Text = "—"
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 14
+minimizeBtn.TextColor3 = Color3.new(1,1,1)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(80,80,80)
+minimizeBtn.Parent = frame
+
+local mc = Instance.new("UICorner")
+mc.CornerRadius = UDim.new(1,0)
+mc.Parent = minimizeBtn
+
+minimizeBtn.MouseButton1Click:Connect(function()
+
+	minimized = not minimized
+
+	for _,obj in ipairs(frame:GetChildren()) do
+		if obj:IsA("GuiObject")
+		and obj ~= title
+		and obj ~= close
+		and obj ~= minimizeBtn then
+
+			obj.Visible = not minimized
+		end
+	end
+
+	if minimized then
+		frame.Size = UDim2.new(0,250,0,40)
+		minimizeBtn.Text = "+"
+	else
+		frame.Size = UDim2.new(0,250,0,560)
+		minimizeBtn.Text = "—"
+	end
+
+end)
+
+-- Auto Press Z X C V F
+local keys = {
+	Z = Enum.KeyCode.Z,
+	X = Enum.KeyCode.X,
+	C = Enum.KeyCode.C,
+	V = Enum.KeyCode.V,
+	W = Enum.KeyCode.W
+}
+
+for skill, keyCode in pairs(keys) do
+	task.spawn(function()
+		while task.wait(0.1) do
+			if _G.BrokenBladeSkills[skill] then
+				VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+				task.wait(0.1)
+				VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+			end
+		end
+	end)
+end
+
+-- AutoParryX Logic
+task.spawn(function()
+	while task.wait(0.05) do
+		if not _G.BrokenBladeSkills.AutoParryX then continue end
+
+		local runtime = workspace:FindFirstChild("__Player3CSkillRuntime")
+		if not runtime then continue end
+
+		local vfx = runtime:FindFirstChild("Boss攻击红光VFX")
+		if not vfx then continue end
+
+		local attachment = vfx:FindFirstChild("Attachment")
+		if not attachment then continue end
+
+		if not attachment:FindFirstChild("F") then continue end
+
+		-- F โผล่ กด X ทันที
+		VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.X, false, game)
+		task.wait(2)
+		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.X, false, game)
+		task.wait(0.1)
+	end
+end)
+
+-- ===== AUTO BEHIND MONSTER (Heartbeat + Lerp) =====
+_G.AutoBehindMonster = false
+
+local RunService = game:GetService("RunService")
+local BEHIND_DISTANCE = 30
+local LERP_SPEED = 0.18  -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
+
+local autoBehindConnection = nil  -- เก็บ connection ไว้ disconnect ได้
+
+local autoBehindBtn = Instance.new("TextButton")
+autoBehindBtn.Size = UDim2.new(0.85,0,0,40)
+autoBehindBtn.Position = UDim2.new(0.075,0,0,355)
+autoBehindBtn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+autoBehindBtn.TextColor3 = Color3.fromRGB(255,255,255)
+autoBehindBtn.Font = Enum.Font.GothamBold
+autoBehindBtn.TextSize = 13
+autoBehindBtn.Parent = frame
+
+local abmc = Instance.new("UICorner")
+abmc.CornerRadius = UDim.new(0,8)
+abmc.Parent = autoBehindBtn
+
+local function updateAutoBehind()
+	if _G.AutoBehindMonster then
+		autoBehindBtn.BackgroundColor3 = Color3.fromRGB(0,160,80)
+		autoBehindBtn.Text = "AUTO BEHIND MOB  [ ON ]"
+	else
+		autoBehindBtn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+		autoBehindBtn.Text = "AUTO BEHIND MOB  [ OFF ]"
+	end
+end
+updateAutoBehind()
+
+local function getClosestEnemy(hrp)
+	local enemyService = workspace:FindFirstChild("EnemyService")
+	if not enemyService then return nil end
+
+	local closestHRP = nil
+	local closestDist = math.huge
+
+	for _, enemy in ipairs(enemyService:GetChildren()) do
+		for _, child in ipairs(enemy:GetDescendants()) do
+			if child.Name == "HumanoidRootPart" and child:IsA("BasePart") then
+				local dist = (hrp.Position - child.Position).Magnitude
+				if dist < closestDist then
+					closestDist = dist
+					closestHRP = child
+				end
+				break
+			end
+		end
+	end
+
+	return closestHRP
+end
+
+autoBehindBtn.MouseButton1Click:Connect(function()
+	_G.AutoBehindMonster = not _G.AutoBehindMonster
+	updateAutoBehind()
+
+	if _G.AutoBehindMonster then
+		-- เปิด: ผูก Heartbeat
+		autoBehindConnection = RunService.Heartbeat:Connect(function()
+			if not _G.AutoBehindMonster then return end
+
+			local char = player.Character
+			if not char then return end
+
+			local hrp = char:FindFirstChild("HumanoidRootPart")
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			if not hrp or not humanoid or humanoid.Health <= 0 then return end
+
+			local enemyHRP = getClosestEnemy(hrp)
+			if not enemyHRP then return end
+
+			local enemyCF = enemyHRP.CFrame
+
+			-- จุดหลังมอน
+			local behindPos = enemyCF.Position + (-enemyCF.LookVector * BEHIND_DISTANCE)
+			behindPos = Vector3.new(behindPos.X, enemyCF.Position.Y, behindPos.Z)
+
+			-- Lerp position: เลื่อนเข้าหาทีละนิด (แม่เหล็ก)
+			local newPos = hrp.Position:Lerp(behindPos, LERP_SPEED)
+
+			-- หันหน้าเข้าหามอนด้วย
+			local lookDir = (enemyCF.Position - newPos) * Vector3.new(1,0,1)
+			local newCF = CFrame.new(newPos, newPos + lookDir)
+
+			hrp.CFrame = newCF
+		end)
+	else
+		-- ปิด: ตัด Heartbeat ทันที
+		if autoBehindConnection then
+			autoBehindConnection:Disconnect()
+			autoBehindConnection = nil
+		end
+	end
+end)
+
+-- Return Position Button
+local returnBtn = Instance.new("TextButton")
+returnBtn.Size = UDim2.new(0.85,0,0,40)
+returnBtn.Position = UDim2.new(0.075,0,0,460)
+returnBtn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+returnBtn.TextColor3 = Color3.fromRGB(255,255,255)
+returnBtn.Font = Enum.Font.GothamBold
+returnBtn.TextSize = 16
+returnBtn.Parent = frame
+
+local rc = Instance.new("UICorner")
+rc.CornerRadius = UDim.new(0,8)
+rc.Parent = returnBtn
+
+local function updateReturnButton()
+	if _G.ReturnToPosition then
+		returnBtn.BackgroundColor3 = Color3.fromRGB(0,120,255)
+		returnBtn.Text = "RETURN [ ON ]"
+	else
+		returnBtn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+		returnBtn.Text = "RETURN [ OFF ]"
+	end
+end
+updateReturnButton()
+
+returnBtn.MouseButton1Click:Connect(function()
+	_G.ReturnToPosition = not _G.ReturnToPosition
+	if _G.ReturnToPosition then
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if hrp then SavedPosition = hrp.Position end
+	else
+		SavedPosition = nil
+	end
+	updateReturnButton()
+end)
+
+-- Anti AFK
+task.spawn(function()
+	while true do
+		task.wait(60)
+		VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+		task.wait(0.1)
+		VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+	end
+end)
+
+-- Return To Saved Position (แก้ใหม่)
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+
+		if not _G.ReturnToPosition or not SavedPosition then continue end
+
+		local char = player.Character
+		if not char then continue end
+
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+
+		if not humanoid or not hrp then continue end
+		if humanoid.Health <= 0 then continue end
+
+		local distance = (hrp.Position - SavedPosition).Magnitude
+		if distance <= 3 then continue end
+
+		-- ถ้าไกลเกิน 3 studs teleport กลับเลย
+		hrp.CFrame = CFrame.new(SavedPosition)
+	end
+end)
