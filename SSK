@@ -13,7 +13,7 @@ _G.BrokenBladeSkills = {
 	X = false,
 	C = false,
 	V = false,
-	W = false,
+	R = false,
 	AutoParryX = false
 }
 
@@ -96,7 +96,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- Buttons Z X C V F (5 ปุ่ม)
-local skills = {"Z","X","C","V","W"}
+local skills = {"Z","X","C","V","R"}
 
 for i, key in ipairs(skills) do
 	local btn = Instance.new("TextButton")
@@ -225,7 +225,7 @@ local keys = {
 	X = Enum.KeyCode.X,
 	C = Enum.KeyCode.C,
 	V = Enum.KeyCode.V,
-	W = Enum.KeyCode.W
+	R = Enum.KeyCode.R
 }
 
 for skill, keyCode in pairs(keys) do
@@ -268,8 +268,8 @@ end)
 _G.AutoBehindMonster = false
 
 local RunService = game:GetService("RunService")
-local BEHIND_DISTANCE = 30
-local LERP_SPEED = 0.18  -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
+local BEHIND_DISTANCE = 40
+local LERP_SPEED = 0.35  -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
 
 local autoBehindConnection = nil  -- เก็บ connection ไว้ disconnect ได้
 
@@ -338,7 +338,7 @@ autoBehindBtn.MouseButton1Click:Connect(function()
 
 			local enemyHRP = getClosestEnemy(hrp)
 			if not enemyHRP then return end
-
+			workspace.CurrentCamera.CameraSubject = enemyHRP	
 			local enemyCF = enemyHRP.CFrame
 
 			-- จุดหลังมอน
@@ -353,8 +353,16 @@ autoBehindBtn.MouseButton1Click:Connect(function()
 			local newCF = CFrame.new(newPos, newPos + lookDir)
 
 			hrp.CFrame = newCF
+			local camera = workspace.CurrentCamera
+			camera.CameraSubject = enemyHRP
 		end)
 	else
+		if player.Character then
+	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		workspace.CurrentCamera.CameraSubject = humanoid
+	end
+end
 		-- ปิด: ตัด Heartbeat ทันที
 		if autoBehindConnection then
 			autoBehindConnection:Disconnect()
