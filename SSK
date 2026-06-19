@@ -268,8 +268,8 @@ end)
 _G.AutoBehindMonster = false
 
 local RunService = game:GetService("RunService")
-local BEHIND_DISTANCE = 40
-local LERP_SPEED = 0.35  -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
+local BEHIND_DISTANCE = 35
+local LERP_SPEED = 0.18  -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
 
 local autoBehindConnection = nil  -- เก็บ connection ไว้ disconnect ได้
 
