@@ -268,8 +268,12 @@ end)
 _G.AutoBehindMonster = false
 
 local RunService = game:GetService("RunService")
-local BEHIND_DISTANCE = 35
-local LERP_SPEED = 0.18 -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
+local NORMAL_DISTANCE = 20
+local DANGER_DISTANCE = 100
+local BEHIND_DISTANCE = NORMAL_DISTANCE
+
+local CharonSkillActive = false
+local LERP_SPEED = 0.35 -- 0.1=ช้าเนียน / 0.2=กลาง / 0.35=เร็ว
 
 local autoBehindConnection = nil  -- เก็บ connection ไว้ disconnect ได้
 
@@ -320,6 +324,81 @@ local function getClosestEnemy(hrp)
 	return closestHRP
 end
 
+local CHarONAnimationID = "100547102250054"
+
+local function hookCharon(boss)
+
+	if not string.find(boss.Name,"Charon") then
+		return
+	end
+
+	local humanoid = boss:WaitForChild("Humanoid",5)
+	if not humanoid then return end
+
+	local animator = humanoid:WaitForChild("Animator",5)
+	if not animator then return end
+
+	print("Hook Charon:",boss.Name)
+
+
+	animator.AnimationPlayed:Connect(function(track)
+
+    local id = track.Animation.AnimationId
+    id = string.gsub(id,"rbxassetid://","")
+
+
+    if id == CHarONAnimationID then
+
+        print("🔥 CHARON WIND START")
+
+        CharonSkillActive = true
+
+        -- รอ 1.5 วิ แล้วดันระยะออกไป 200
+        task.delay(0.5,function()
+
+            if CharonSkillActive then
+                print("⚠️ DISTANCE 200")
+                BEHIND_DISTANCE = DANGER_DISTANCE
+            end
+
+        end)
+
+        -- รออีก 4 วิ หลังจากนั้น แล้วกลับค่าเดิม (รวม 5.5 วิจากเริ่มท่า)
+        task.delay(0.5 + 1.5,function()
+
+            print("✅ CHARON WIND END")
+
+            CharonSkillActive = false
+            BEHIND_DISTANCE = NORMAL_DISTANCE
+
+        end)
+
+    end
+
+end)
+
+end
+
+
+
+-- จับบอสที่มีอยู่แล้ว
+local enemyService = workspace:WaitForChild("EnemyService")
+
+for _,boss in ipairs(enemyService:GetChildren()) do
+	hookCharon(boss)
+end
+
+
+-- จับบอสเกิดใหม่
+enemyService.ChildAdded:Connect(function(boss)
+
+	task.wait(1)
+
+	hookCharon(boss)
+
+end)
+
+
 autoBehindBtn.MouseButton1Click:Connect(function()
 	_G.AutoBehindMonster = not _G.AutoBehindMonster
 	updateAutoBehind()
@@ -345,14 +424,14 @@ autoBehindBtn.MouseButton1Click:Connect(function()
 			local behindPos = enemyCF.Position + (-enemyCF.LookVector * BEHIND_DISTANCE)
 			behindPos = Vector3.new(behindPos.X, enemyCF.Position.Y, behindPos.Z)
 
-			-- Lerp position: เลื่อนเข้าหาทีละนิด (แม่เหล็ก)
-			local newPos = hrp.Position:Lerp(behindPos, LERP_SPEED)
+-- ล็อกตำแหน่งตรงหลังมอนทันที ไม่ผ่าน Lerp
+local newPos = behindPos
 
-			-- หันหน้าเข้าหามอนด้วย
-			local lookDir = (enemyCF.Position - newPos) * Vector3.new(1,0,1)
-			local newCF = CFrame.new(newPos, newPos + lookDir)
+-- หันหน้าเข้าหามอนด้วย
+local lookDir = (enemyCF.Position - newPos) * Vector3.new(1,0,1)
+local newCF = CFrame.new(newPos, newPos + lookDir)
 
-			hrp.CFrame = newCF
+hrp.CFrame = newCF
 			local camera = workspace.CurrentCamera
 			camera.CameraSubject = enemyHRP
 		end)
